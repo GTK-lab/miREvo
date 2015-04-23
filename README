@@ -1,7 +1,7 @@
 Introduction
 ==============================================================================================================================
 miREvo: an integrative microRNA evolutionary analysis platform for next-generation sequencing experiments
-                                     (version 1.2, Nov. 2009)                                                 
+                                     (version 1.3, Apr. 2015)                                                 
 																														
                                Please send bug reports, comments etc. to:                                           
                                        wenming126@gmail.com                                                         
@@ -57,7 +57,7 @@ To test if everything is installed properly type in
 
 you should not get any error messages otherwise something is not correctly installed
 
-Note: some of those utilities are provied in the following package in case your don't want to build the whole source code for those softwares.
+Note: some of those utilities are provided in the following package in case your don't want to build the whole source code for those softwares.
 
 	http://evolution.sysu.edu.cn/software/utilities.tar.gz
 
@@ -104,7 +104,7 @@ To start the demo,  do:
 
 	tar xzvf dme_demo.tar.gz
 	cd dme_demo
-	bowtie-build -f dme_repeat/databse.fas dme_repeat/databse
+	bowtie-build -f dme_repeat/database.fas dme_repeat/database
 	bowtie-build -f dme_mirbase/dme.hairpin.fa dme_mirbase/dme.hairpin
 	miREvo filter -i dme_reads.fa -d dme_repeat/database -H dme_mirbase/dme.hairpin  -M dme_mirbase/dme.mature.fa -o dme -p 10
 	bowtie-build -f dme_chr/reference.fas dme_chr/reference
@@ -126,19 +126,19 @@ For the Graphical User Interface. type:
 
 Then follow the instructions to go on you operation.
 
-Input File Annotatoins:
+Input File Annotations:
 	-- dme_reads.fas: This is a small RNA reads library sequenced using Solexa 1G.
-	-- dme_repeat/databse.fas: Fasta sequenced contains structure RNA (tRNA, transposon, etc.) or mRNA sequenced, 
-							   reads mapped to this sequences will be removed from the reads data set.
-	-- dme_mirbase/*.fa: The miRNAs of drosophila which previously indentified, downloaded from miRBase.
+	-- dme_repeat/database.fas: Fasta sequenced contains structure RNA (tRNA, transposon, etc.) or mRNA sequenced, 
+					reads mapped to this sequences will be removed from the reads data set.
+	-- dme_mirbase/*.fa: The miRNAs of drosophila which previously identified, downloaded from miRBase.
 	-- dme_chr/*.fa: The genome sequence of D. melanogaster (dm3), downloaded from UCSC.
 	-- dm3.maf: Multiple alignments of 14 insects with D. melanogaster (dm3), downloaded from UCSC.
 
-Output File Annotatoins:
+Output File Annotations:
 	See the following parts of this manual.
 
 We also provide a simple solution to compare the expression of orthologous miRNAs across multiple libraries.
-The is implemented as a perl script runing as:
+The is implemented as a perl script running as:
 
 	perl compare_exp.pl reference_genome homoseq_prj predict_prj1 predict_prj2 ...... predict_prjN
 
@@ -158,8 +158,8 @@ filter
 	Small RNA reads are filtered out from the complex small RNA sequencing libraries following these two steps: 
 	Firstly is the unwanted reads derived from any types of structure RNAs present in the cell, such as tRNA, rRNA annotated in Rfam;
 	RNA derived form repeat/transposon presented in RepBase; since most annotated miRNAs in miRBase are presented in intergenic region
-	reads coresponed to mRNA/coding sequening can also be discarded.
-	Seconedly is the reads representd for the known miRNA in the corresponding species, if it is provided. Their expression is also 
+	reads corresponded to mRNA/coding sequencing can also be discarded.
+	Secondly is the reads represented for the known miRNA in the corresponding species, if it is provided. Their expression is also 
 	determined in this step, using quantifier.pl provided in miRDeep2 package.
 	The remaining reads are then used for novel miRNA prediction.
 
@@ -168,20 +168,20 @@ filter
 	Collapses reads in the fasta file to ensure that each sequence only occurs once. To indicate how
 	many times reads the sequence represents, a suffix is added to each fasta identifier. E.g. a
 	sequence that represents ten reads in the data will have the '_x10' suffix added to the identifier.  
-	You can collapse reads with collapse_reads.pl provided by miRDeep2:
-	collapse_reads.pl reads.fa > reads_collapsed
-	2) Bowtie index databse cantains the unwanted sequence descripted above, for instance:
-	cat repeat.fas Rfam.cantains.no.mir.fas mRNA.fas anyother.fas > databse.fas
-	bowtie-built -f databse.fas databse
-	3) Bowtie index databse for hairpin sequence for known miRNAs, please provided this if you only wanted
+	You can collapse reads with collapse_reads*.pl (collapse_reads_md.pl in miRDeep2-v2.0.0.7) provided by miRDeep2:
+	collapse_reads_md.pl reads.fa > reads_collapsed
+	2) Bowtie index database contains the unwanted sequence described above, for instance:
+	cat repeat.fas Rfam.contains.no.mir.fas mRNA.fas anyother.fas > database.fas
+	bowtie-built -f database.fas database
+	3) Bowtie index database for hairpin sequence for known miRNAs, please provided this if you only wanted
 	to predict novel miRNAs.
 
 	Example usage:
-	miREvo filter -i reads.fa -d /dir/to/databse -H /dir/to/hairpin -o prj -p 10 
+	miREvo filter -i reads.fa -d /dir/to/database -H /dir/to/hairpin -o prj -p 10 
 
 
 	Output:
-	All the output file will be dump to the "prj" folder (specified by the option "-o"), usefull file are:
+	All the output file will be dump to the "prj" folder (specified by the option "-o"), useful files are:
 	1) filter.statistic, basic statistic for the reads mappings and expression evaluation for known miRNAs.
 	2) filter.kn.map, reads distribution along each known miRNA.
 	3) filter.kn.nomap.fas reads
@@ -190,7 +190,7 @@ filter
 	In miREvo, the fasta sequences corresponded for the bowtie index may be also needed in some steps. For example, 
 	if you provide bowtie index as "/dir/to/hairpin", miREvo will look for the corresponding fasta file in the format
 	as "/dir/to/hairpin.fa", "/dir/to/hairpin.fas" or "/dir/to/hairpin.fasta". Please name them in that format and
-	build the bowtie index in the rigth way.
+	build the bowtie index in the right way.
 
 predict
 
@@ -199,11 +199,11 @@ predict
 		
 	Input:
 	1) filter.kn.nomap.fas, one of the outputs after the "filter" step.
-	2) Bowtie index databse for genome sequence.
-	3) Fasta file with known miRNA mature  sequence for your species.
+	2) Bowtie index database for genome sequence.
+	3) Fasta file with known miRNA mature sequence for your species.
 
 	Example usage:
-	miREvo predict -o prj -d /dir/to/genome -M /dir/to/mature.fas -s /dir/to/other.mature.fas -p 10 -m 1
+	miREvo predict -o prj -r /dir/to/genome -M /dir/to/mature.fas -s /dir/to/other.mature.fas -p 10 -m 1
 
 	Output:
 	1) predict.result.csv, miRDeep2 report prediction result.
@@ -215,8 +215,8 @@ predict
 
 	Notes:
 	Characterization of plant miRNAs are considerable different from animal miRNAs, for example, plant miRNAs may possess 
-	a larger families and long hairpin sequence. By setting the rigth parameters for options "-k","-m" , miREvo will 
-	tolerated more repeat mapping and will adjust to the parameters developed specificly for plant miRNA discovery.
+	a larger families and long hairpin sequence. By setting the right parameters for options "-k","-m" , miREvo will 
+	tolerated more repeat mapping and will adjust to the parameters developed specifically for plant miRNA discovery.
 
 homoseq
 
@@ -225,10 +225,10 @@ homoseq
 
 	Input:
 	1) Fasta file with deep sequencing reads.
-	2) Fasta file with mirna mature sequence.
-	3) Fasta file with mirna hairpin sequence.
-	4) Bowtie index databse for genome reference sequence.
-	5) Whole  genome alignment files, UCSC MAF format.
+	2) Fasta file with miRNA mature sequence.
+	3) Fasta file with miRNA hairpin sequence.
+	4) Bowtie index database for genome reference sequence.
+	5) Whole genome alignment files, UCSC MAF format.
 
 	Example usage:
 	miREvo homoseq -o prj -i /dir/to/reads.fa -M /dir/to/mature.fa -H /dir/to/hairpin.fa -d /dir/to/reference -m /dir/to/maf -p 10
@@ -240,12 +240,12 @@ homoseq
 	4) homoseq.mirna.kmir, dna distance of miRNA hairpin (kmir), calculated based on Kimura 2-parameters model.
 
 	Notes:
-	1) For the command "homoseq" and "display" sequencs searching of miRNA precursors.
+	1) For the command "homoseq" and "display" sequences searching of miRNA precursors.
 	The ids in files miRBase_mmu_v14.fa and precursors_ref_this_species.fa need to be similar to each other.
 	This is usually no problem if you downloaded both files from miRBase.
 	Otherwise it can happen that the quantifier fails to produce results. 
-	2) MAF file must be contrusted by using the genome of your species as the reference genome.
-	3) Please make sure that the chromsome name in the genome reference of your specie is the same as it present in the MAF file 
+	2) MAF file must be constructed by using the genome of your species as the reference genome.
+	3) Please make sure that the chromosome name in the genome reference of your specie is the same as it present in the MAF file 
 	Otherwise it can happen that miREvo fails to fetch the alignment. 
 
 display
@@ -255,8 +255,8 @@ display
 
 	Input:
 	1) Fasta file with deep sequencing reads.
-	2) Fasta file with mirna mature sequence.
-	3) Fasta file with mirna hairpin sequence.
+	2) Fasta file with miRNA mature sequence.
+	3) Fasta file with miRNA hairpin sequence.
 
 	Example usage:
 	miREvo display -o prj -i /dir/to/reads.fa -M /dir/to/mature.fa -H /dir/to/hairpin.fa -p 10
@@ -266,13 +266,13 @@ display
 	3) display.statistic, basic statistic for reads mappings and expression evaluation for miRNAs.
 
 	Notes:
-	For the "predict" step, the reads mapping and structure information of the known miRNAs would not be browsed in the GUI,
-	otherwise, you can using this command to create a new project and using the GUI command "open a existing project" to display
+	For the "predict" step, the read mappings and structure information of the known miRNAs can not be browsed in the GUI.
+	You can use this command to create a new project and use the GUI command "open a existing project" to display
 	those information.
 
 End
 ==============================================================================================================================
-Thanks for using, have fun !
+Thanks for using miREvo, have fun!
 
 By:    Wen Ming
 Email: wenming126@gmail.com

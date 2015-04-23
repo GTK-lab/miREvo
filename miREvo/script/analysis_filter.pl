@@ -26,32 +26,60 @@ if (@ARGV == 5){
 
 my %readsStat;
 if(defined($reads)){
-	open(READ, $reads)|| print "Warning: can not open $reads: $!\n";
+	open(READ, $reads) || die "Warning: can not open $reads: $!\n";
+	$readsStat{"DistinctTotal"}=0;
 	while(my $line = <READ>){
 		if($line =~ /^>/){
-			my(undef,undef,$count) = split(/_/,$line);
-			$count =~ s/x// ;
-			$readsStat{"Total"} += $count;
+			# If it is a header line, 
+			# make sure it conforms with the
+			# correct format before parsing!
+			if ($line =~ /^>[a-zA-Z0-9]{3}_[0-9]+_x[0-9]+/) {
+				my(undef,undef,$count) = split(/_/,$line);
+				$count =~ s/x// ;
+				$readsStat{"Total"} += $count;
+				$readsStat{"DistinctTotal"}++;
+			} else {
+				print "Header format incorrect on line $. of $reads\n";
+				exit;
+			}
 		}
 	}
 	close READ;
-	printf "## total Reaads:\t%d\n", $readsStat{"Total"};
+	printf "## Distinct Reads (Before Filtering):\t%d\n", $readsStat{"DistinctTotal"};
+	printf "## Total Reads (Before Filtering):\t%d\n", $readsStat{"Total"};
 }
 
+# The bash script (pipeline_filter.sh) that calls this perl script
+# will pass in a $db_bwt which contains db_bwt format information and path information.
+# For all files in that directory path that matches the db_bwt file name format:
+# Do a statistic summary for it.
 if(defined($db_bwt)){
-	open(DB, $db_bwt)|| print "Warning: can not open $db_bwt: $!\n";
-	while(my $line = <DB>){
-		my @arr = split(/\s+/, $line);
-		my(undef,undef,$count) = split(/_/,$arr[0]);
-		$count =~ s/x// ;
-		$readsStat{"DB"} += $count;
+	my @files;
+	$db_bwt =~ s/xxx/*/;
+	my $command = '@files = <' . $db_bwt . '>';
+	eval $command;
+	foreach my $file (@files) {
+		$readsStat{"DistinctDB"} = 0;
+		open(DB, $file)|| print "Warning: can not open $file: $!\n";
+		while(my $line = <DB>){
+			# Should already be in the correct format
+			# if reads were in the right format.
+			my @arr = split(/\s+/, $line);
+			my(undef,undef,$count) = split(/_/,$arr[0]);
+			$count =~ s/x// ; # Total number of filtered reads.
+			$readsStat{"DB"} += $count;
+			$readsStat{"DistinctDB"}++; # Number of distinct filtered reads.
+		}
+		close DB;
+		printf "## --------------------------------------------------------\n";
+		printf "## Filter Group:\t$file\n";
+		printf "## Distinct Fitered Reads:\t%d\n",$readsStat{"DistinctDB"};
+		printf "## Total Filtered Reads\t%d\n", $readsStat{"DB"};
 	}
-	close DB;
-	printf "## Filtered Reaads\t%d\n", $readsStat{"DB"};
 }
 
 if ( ! -e $kn_bwt){
-	print "No mapping result for known miRNA, exit expresion analysis.\n";
+	print "No mapping result for known miRNA, exit expression analysis.\n";
 	exit;
 }
 
@@ -170,7 +198,7 @@ sub get_mature_in_hairpin_seq {
 			my $mat_seq_rec = rev_com_seq($mat_seq);
 			$tmp_pos = index($hairpin_seq, $mat_seq);
 			if ($tmp_pos < 0){
-				print STDERR "Conn't defined mature position for $id$tag\t$mat_seq\t$hairpin_seq\n";
+				print STDERR "Can't define mature position for $id$tag\t$mat_seq\t$hairpin_seq\n";
 			}
 		}
 		$mature_beg = $tmp_pos;

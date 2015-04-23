@@ -21,7 +21,7 @@ function USAGE {
 	echo "                      default=50000, if set to -1 all precursors will be analyzed"
 	echo "        -u  <str>     species being analyzed - this is used to link to the appropriate UCSC browser entry"
 	echo "        -t  <int>     temperature cut-off for RNAfold when calculating secondary structures of RNAs, default=22"
-	echo "        -m  <1/2/3>   predicttion model, 1: animal; 2: monocot; 3 dicots.  default=1"
+	echo "        -m  <1/2/3>   prediction model, 1: animal; 2: monocot; 3 dicots.  default=1"
 	echo ""
 	echo "    Options for Bowtie:"
 	echo "        -p  <int>   number of processors to use, default=1"
