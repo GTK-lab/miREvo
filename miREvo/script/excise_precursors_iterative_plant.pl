@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
 
 use warnings;
 use strict;
@@ -22,18 +22,21 @@ my $file_output=shift or die $usage;
 my $coord_file=shift or die $usage;
 my $pres_max=shift;
 
+
 if($pres_max !~ /^[-]*\d+/){
     print STDERR "$pres_max is not an integer number\n"; 
     die $usage;
 }
 
 my %thres_counts=();
-my $upper_bound=50;
+my $thresh_step=10;
+my $upper_bound=500;
+my @thresholds = grep { $_ % $thresh_step == 0 } 1..$upper_bound;
 my %dblimit=();
 my $plant_up=22;
 my $plant_down=276;
 
-for (my $z=1;$z<$upper_bound;$z++){
+foreach my $z (@thresholds) { 
     $dblimit{$z} = 0;
     $thres_counts{$z}=0;
 }
@@ -66,19 +69,17 @@ if($options{b}){print STDERR "potential precursors excised\n";}
 close TMP1;
 close TMP2;
 
-for (my $z=1;$z<$upper_bound;$z++){
+foreach my $z (@thresholds)  { 
     print STDERR "$z\t$thres_counts{$z}\n";
     if($thres_counts{$z} < $pres_max or $pres_max < 0){
-        if($options{b}){ print STDERR "creating output files now\n";}
+        if($options{b}){print STDERR "creating output files with minimum stack height $z\n";}
         make_files($z);
-		open OSS,">${file_output}_stack" or die "File could not be created\n";
-		print OSS "$z\n";
-		close OSS;
+        open OSS,">${file_output}_stack" or die "File could not be created\n";
+        print OSS "$z\n";
+        close OSS;
         exit;
     }
 }
-
-exit;
 
 sub make_files{
     my ($thres)=@_;
@@ -254,7 +255,7 @@ sub excise{
         
         #the most 3' position that has yet been excised
         my $db_limit=0; 
-        for (my $z=1;$z<$upper_bound;$z++){
+        for my $z (@thresholds)  { 
             $dblimit{$z} = 0;
         }
 
@@ -277,7 +278,7 @@ sub excise{
                 #if read stack to low, if higher read stack downstream or if this locus has already
                 #been excised, then continue to next stack
                             
-                for (my $z=1;$z<$upper_bound;$z++){
+                for my $z (@thresholds) { 
                     $freq_min=$z;
                     if($freq<$freq_min or $freq<$freq_max_ds or $db_beg<$dblimit{$z}){next;}
                     #else excise to sequences, corresponding to the read stack being the mature sequence
