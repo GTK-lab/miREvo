@@ -7,7 +7,7 @@ use Cwd;
 
 
 #--------------------------------------------------
-# use PDF::API2;              ## needed to create a PDF file
+use PDF::API2;              ## needed to create a PDF file
 #-------------------------------------------------- 
 use Math::Trig;             ## needed for sinus function
 use List::Util qw(min max); ## needed to provide min and max function for lists  
@@ -1534,7 +1534,7 @@ sub CreatePDF{
     $page=$pdf->page;
     $gfx=$page->gfx;
     $text=$gfx;
-    $trb=$pdf->corefont('Times-Roman', -encode=>'latin1');
+    $trb=$pdf->corefont('Helvetica', -encode=>'latin1');
  
     
     ## move everything except the structure downwards if $mirbase is set

@@ -2,7 +2,6 @@
 
 shopt -s -o nounset
 
-
 function USAGE {
 	echo ""
 	echo "Usage: miREvo predict -o prefix -r reference -M mature.fa -s other.mature.fa [options]"
@@ -33,6 +32,7 @@ if [ $# -eq 0 ]; then
 	exit 192;
 fi
 
+declare -ix NPROCESSORS=$(grep -c processor /proc/cpuinfo)
 declare -rx SCRIPT=${0##*/}
 declare -r OPTSTRING="o:r:t:b:s:M:cg:u:m:v:p:n:k:h"
 declare SWITCH
@@ -52,12 +52,14 @@ declare -i score=1
 declare -i rand=1
 declare -i gear=50000
 
+source log.sh #  https://github.com/GTK-lab/log.sh
+
 program_dir="$MIREVO/script"
 
 while getopts "$OPTSTRING" SWITCH ; do
 	case $SWITCH in
 		h)  USAGE;
-			exit 192;
+		exit 192;
 		;;
 		r) genome="$OPTARG"
 		;;
@@ -102,38 +104,39 @@ MATCH=$prj/predict.match.out
 cmdlog=$prj/predict.cmd
 
 if [[ ! -e $prj ]]; then
-	echo "The project $prj has not been created yet."
-	echo "Please start a new miRNA prediction project by command   \"miREvo filter\"  firstly."
-	echo "Exit now."
+	LSERROR "The project $prj has not been created yet."
+	LSERROR "Please start a new miRNA prediction project by command   \"miREvo filter\"  firstly."
+	LSERROR "Exit now."
 	exit 192
 fi
 
 if [[ $known_mature == " " ]]; then
-	echo "Please povide a fasta file for mature sequence of your species with options -M"
-	echo "Exit now"
+	LSERROR "Please povide a fasta file for mature sequence of your species with options -M"
+	LSERROR "Exit now"
 	exit 192
 fi
 known_mature_new=predict.`basename $known_mature`
-echo "perl $program_dir/rna2dna.pl $known_mature > $prj/$known_mature_new" > $cmdlog
-perl $program_dir/rna2dna.pl $known_mature > $prj/$known_mature_new
-
-if [[ $other_mature == " " ]]; then
-	echo "Please povide a fasta file for mature sequence of related species with options -s"
-	echo "Exit now"
-	exit 192
-fi
 other_mature_new=predict.`basename $other_mature`
-echo "perl $program_dir/rna2dna.pl $other_mature > $prj/$other_mature_new" >> $cmdlog
+
+
+LSINFO "perl $program_dir/rna2dna.pl $known_mature > $prj/$known_mature_new" > $cmdlog
+perl $program_dir/rna2dna.pl $known_mature > $prj/$known_mature_new
+if [[ $other_mature == " " ]]; then
+    LSERROR "Please povide a fasta file for mature sequence of related species with options -s"
+    LSERROR "Exit now"
+    exit 192
+fi
+LSINFO "perl $program_dir/rna2dna.pl $other_mature > $prj/$other_mature_new" >  $cmdlog
 perl $program_dir/rna2dna.pl $other_mature > $prj/$other_mature_new
 
-echo "Bowtie mapping ..." # 4 lines
-echo "bowtie -p $CPU -f -n 0 -e 80 -l 18 -a -m $MAXREP --best --strata $genome $INPUT > $prj/predict.mapping.bwt" >> $cmdlog
+LSINFO "Bowtie mapping ..." # 4 lines
+LSINFO "bowtie -p $CPU -f -n 0 -e 80 -l 18 -a -m $MAXREP --best --strata $genome $INPUT > $prj/predict.mapping.bwt" >  $cmdlog
 bowtie -p $CPU -f -n 0 -e 80 -l 18 -a -m $MAXREP --best --strata $genome $INPUT > $prj/predict.mapping.bwt
-echo "perl $program_dir/convert_bowtie_output.pl $prj/predict.mapping.bwt > $prj/predict.mapping.arf" >> $cmdlog
+LSINFO "perl $program_dir/convert_bowtie_output.pl $prj/predict.mapping.bwt > $prj/predict.mapping.arf" >  $cmdlog
 perl $program_dir/convert_bowtie_output.pl $prj/predict.mapping.bwt > $prj/predict.mapping.arf
 
-echo "Parsing mapping results ..." # 2 lines
-echo "perl $program_dir/parse_mappings.pl $prj/predict.mapping.arf -a $MIS -b 18 -c 25 -i $MAXREP -j > $prj/predict.mapping.arf.trim" >> $cmdlog
+LSINFO "Parsing mapping results ..." # 2 lines
+LSINFO "perl $program_dir/parse_mappings.pl $prj/predict.mapping.arf -a $MIS -b 18 -c 25 -i $MAXREP -j > $prj/predict.mapping.arf.trim" >  $cmdlog
 perl $program_dir/parse_mappings.pl $prj/predict.mapping.arf -a $MIS -b 18 -c 25 -i $MAXREP -j > $prj/predict.mapping.arf.trim
 
 declare genome_seq
@@ -154,34 +157,50 @@ else
 	exit 192;
 fi
 
-# 66 lines;
-echo "Excise precursors candidates ..." # 7 lines
-if [ $mode -eq 1 ]; then
-  echo "perl $program_dir/excise_precursors_iterative_final.pl $genome_seq $prj/predict.mapping.arf.trim $prj/predict.pre.fa $prj/predict.pre.coords $gear" >> $cmdlog
-  perl $program_dir/excise_precursors_iterative_final.pl $genome_seq $prj/predict.mapping.arf.trim $prj/predict.pre.fa $prj/predict.pre.coords $gear
-else 
-  echo "perl $program_dir/excise_precursors_iterative_plant.pl $genome_seq $prj/predict.mapping.arf.trim $prj/predict.pre.fa $prj/predict.pre.coords $gear" >> $cmdlog
-  perl $program_dir/excise_precursors_iterative_plant.pl $genome_seq $prj/predict.mapping.arf.trim $prj/predict.pre.fa $prj/predict.pre.coords $gear 
+LSINFO "Excise precursors candidates ..." # 7 lines
+if [[ "$mode" ==  1 ]] ; then
+    LSINFO "perl $program_dir/excise_precursors_iterative_final.pl $genome_seq $prj/predict.mapping.arf.trim $prj/predict.pre.fa $prj/predict.pre.coords $gear" >  $cmdlog
+    perl $program_dir/excise_precursors_iterative_final.pl $genome_seq $prj/predict.mapping.arf.trim $prj/predict.pre.fa $prj/predict.pre.coords $gear
+    else 
+    LSINFO "perl $program_dir/excise_precursors_iterative_plant.pl $genome_seq $prj/predict.mapping.arf.trim $prj/predict.pre.fa $prj/predict.pre.coords $gear -b" >  $cmdlog
+    echo 
+    perl $program_dir/excise_precursors_iterative_plant.pl $genome_seq $prj/predict.mapping.arf.trim $prj/predict.pre.fa $prj/predict.pre.coords $gear  
+    echo 
 fi
 
-echo "Preparing signature  ..." # 2 lines
-echo "perl $program_dir/prepare_signature.pl $INPUT $prj/predict.pre.fa 1 -a $prj/$known_mature_new -o $prj/predict.signature.arf" >> $cmdlog
+LSINFO "Preparing signature  ..." # 2 lines
+LSINFO "perl $program_dir/prepare_signature.pl $INPUT $prj/predict.pre.fa 1 -a $prj/$known_mature_new -o $prj/predict.signature.arf" >  $cmdlog
 perl $program_dir/prepare_signature.pl $INPUT $prj/predict.pre.fa 1 -a $prj/$known_mature_new -o $prj/predict.signature.arf 
 
 
-echo "Fold precursors structures ..." # 2 lines
-echo "RNAfold --noPS < $prj/predict.pre.fa > $prj/predict.pre.str" >> $cmdlog
-RNAfold --noPS < $prj/predict.pre.fa > $prj/predict.pre.str
+LSINFO "Fold precursors structures ..." # 2 lines
+LSINFO "RNAfold --noPS < $prj/predict.pre.fa > $prj/predict.pre.str" >  $cmdlog
 
-# 6 lines
-if [ $rand -eq 1 ]; then
-	echo "Computing randfold p-values ..."
-	perl $program_dir/select_for_randfold.pl $prj/predict.signature.arf $prj/predict.pre.str > $prj/predict.pre.ids
-	perl $program_dir/fastaselect.pl $prj/predict.pre.fa $prj/predict.pre.ids > $prj/predict.pre_for_rand.fa
-	randfold -s $prj/predict.pre_for_rand.fa 99 > $prj/predict.pre_for_rand.rand
+if test type fasta-splitter.pl 2>/dev/null ; then 
+    tmpdir=$(mktemp -d)
+    fasta-splitter.pl --n-parts ${NPROCESSORS} --out-dir $tmpdir $prj/predict.pre.fa
+    nice parallel -k "RNAfold --noPS < {} " ::: ${tmpdir}/* > $prj/predict.pre.str
+    /bin/rm -r $tmpdir
+else
+    RNAfold --noPS < $prj/predict.pre.fa > $prj/predict.pre.str
 fi
 
-echo "Running miRDeep core algorithm ..."
+if [ $rand -eq 1 ]; then
+    LSINFO "Computing randfold p-values ..."
+    perl $program_dir/select_for_randfold.pl $prj/predict.signature.arf $prj/predict.pre.str > $prj/predict.pre.ids
+    perl $program_dir/fastaselect.pl $prj/predict.pre.fa $prj/predict.pre.ids > $prj/predict.pre_for_rand.fa
+    if test type fasta-splitter.pl 2>/dev/null ; then 
+        tmpdir=$(mktemp -d)
+        fasta-splitter.pl --n-parts ${NPROCESSORS} --out-dir $tmpdir $prj/predict.pre_for_rand.fa 
+	nice parallel "randfold -s {} 99 " ::: ${tmpdir}/* > $prj/predict.pre_for_rand.rand
+        /bin/rm -r $tmpdir
+    else
+	randfold -s $prj/predict.pre_for_rand.fa 99 > $prj/predict.pre_for_rand.rand
+    fi
+fi
+
+
+LSINFO "Running miRDeep core algorithm ..."
 declare cmd1 
 declare cmd2 
 declare cmd3 
@@ -219,8 +238,10 @@ echo "Make report ..."
 if [[ $species != "" ]]; then
 	perl $program_dir/make_html_simple.pl -f $prj/predict.output.mrd -p $prj/predict.pre.coords -b $score -c -e -i $prj -s $prj/predict.survey.csv -d -t $species
 else
- perl $program_dir/make_html_simple.pl -f $prj/predict.output.mrd -p $prj/predict.pre.coords -s $prj/predict.survey.csv -i $prj -c -e -d
+ perl $program_dir/make_html_simple.pl -f $prj/predict.output.mrd -p $prj/predict.pre.coords -s $prj/predict.survey.csv -i $prj -c -e
 fi
+
+
 
 awk -v PROJNAME=$PROJNAME -F "\t" 'BEGIN{a=0;b=1}{if(/UCSC/){a=1}else{if(a==1){gsub("u","t",$16);gsub("u","t",$14);print ">" PROJNAME "_"b++"_"$14"_"$2"\n"$16}}}' $prj/predict.result.csv > $prj/predict.hairpin.fa
 awk -v PROJNAME=$PROJNAME -F "\t" 'BEGIN{a=0;b=1}{if(/UCSC/){a=1}else{if(a==1){gsub("u","t",$14);gsub("u","t",$15);print ">"PROJNAME"_"b"_"$14"_"$2"\n"$14"\n>"PROJNAME"_"b++"_"$15"_"$2"*\n"$15}}}' $prj/predict.result.csv > $prj/predict.mature.fa
@@ -250,6 +271,7 @@ bowtie-build -f $prj/predict.mirna.fas $prj/predict.mirna > $prj/bowtie-build.lo
 awk '{print ">"$1"\n"$5}' $prj/predict.mapping.arf.trim > $prj/predict.signature.fa
 echo "bowtie -p $CPU -f -v 1 -a --best --strata $prj/predict.mirna $prj/predict.signature.fa > $prj/predict.mirna.bwt" >> $cmdlog
 bowtie -p $CPU -f -v 1 -a --best --strata $prj/predict.mirna $prj/predict.signature.fa > $prj/predict.mirna.bwt
+
 
 
 echo "perl $program_dir/svgShowMapDensity.pl $prj $prj/predict.mirna.fas $prj/predict.mirna.bwt pred" >> $cmdlog

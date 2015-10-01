@@ -142,28 +142,30 @@ CUR_INPUT=$INPUT
 # Note: separating the DATABASE multiple files gives more detailed stats at 
 # 	the expense of computational time
 for DATABASE in $DATABASES
-do
+    do
 
 	# For the first iteration, use $INPUT for bowtie alignment
 	# after that, use the filtered results from the previous iteration
 	if [ -e $DATABASE.1.ebwt ] ; then
-		db_name=`basename $DATABASE`
-		# Get the filename and replace "." by "_"
-		# If the file is called database.rna.1.fa, db_name_stem will be database_rna_1
-		db_name_stem=`echo $db_name | sed 's/\./_/g'`
-		DB_MAP=`echo $DB_MAP_FORMAT | sed s/xxx/${db_name_stem}/g`
-		DB_NOMAP=`echo $DB_NOMAP_FORMAT | sed s/xxx/${db_name_stem}/g`
-		DB_BWT=`echo $DB_BWT_FORMAT | sed s/xxx/${db_name_stem}/g`
+	    db_name=`basename $DATABASE`
+	    # Get the filename and replace "." by "_"
+	    # If the file is called database.rna.1.fa, db_name_stem will be database_rna_1
+	    db_name_stem=`echo $db_name | sed 's/\./_/g'`
+	    DB_MAP=`echo $DB_MAP_FORMAT | sed s/xxx/${db_name_stem}/g`
+	    DB_NOMAP=`echo $DB_NOMAP_FORMAT | sed s/xxx/${db_name_stem}/g`
+	    DB_BWT=`echo $DB_BWT_FORMAT | sed s/xxx/${db_name_stem}/g`
 
-		echo "Filtering out reads mapped to $db_name"
-		echo "bowtie -f -v $MIS -a --best --strata --suppress 5,6,7 $DATABASE $CUR_INPUT --al $DB_MAP --un $DB_NOMAP -p $CPU > $DB_BWT" > $CMDLOG
-		bowtie -f -v $MIS -a --best --strata --suppress 5,6,7 $DATABASE $CUR_INPUT --al $DB_MAP --un $DB_NOMAP -p $CPU > $DB_BWT
-		CUR_INPUT=$DB_NOMAP
+	    if false ; then 
+                echo "Filtering out reads mapped to $db_name"
+	        echo "bowtie -f -v $MIS -a --best --strata --suppress 5,6,7 $DATABASE $CUR_INPUT --al $DB_MAP --un $DB_NOMAP -p $CPU > $DB_BWT" > $CMDLOG
+	        bowtie -f -v $MIS -a --best --strata --suppress 5,6,7 $DATABASE $CUR_INPUT --al $DB_MAP --un $DB_NOMAP -p $CPU > $DB_BWT
+	        CUR_INPUT=$DB_NOMAP
+            fi
 	else
-		echo "Warning: miREvo can't locate the Bowtie index files for repeat database $DATABASE"
-		echo "skip filtering reads in the $DATABASE"
-		echo "cp $CUR_INPUT $DB_NOMAP" > $CMDLOG
-		cp $CUR_INPUT $DB_NOMAP
+	    echo "Warning: miREvo can't locate the Bowtie index files for repeat database $DATABASE"
+	    echo "skip filtering reads in the $DATABASE"
+	    echo "cp $CUR_INPUT $DB_NOMAP" > $CMDLOG
+	    cp $CUR_INPUT $DB_NOMAP
 	fi
 done
 
